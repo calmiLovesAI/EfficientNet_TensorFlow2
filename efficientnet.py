@@ -200,12 +200,34 @@ def get_efficient_net(width_coefficient, depth_coefficient, resolution, dropout_
     return net
 
 
-if __name__ == '__main__':
-    b0 = get_efficient_net(1.0, 1.0, 224, 0.2)
-    b1 = get_efficient_net(1.0, 1.1, 240, 0.2)
-    b2 = get_efficient_net(1.1, 1.2, 260, 0.3)
-    b3 = get_efficient_net(1.2, 1.4, 300, 0.3)
-    b4 = get_efficient_net(1.4, 1.8, 380, 0.4)
-    b5 = get_efficient_net(1.6, 2.2, 456, 0.4)
-    b6 = get_efficient_net(1.8, 2.6, 528, 0.5)
-    b7 = get_efficient_net(2.0, 3.1, 600, 0.5)
+def efficient_net_b0():
+    return get_efficient_net(1.0, 1.0, 224, 0.2)
+
+
+def efficient_net_b1():
+    return get_efficient_net(1.0, 1.1, 240, 0.2)
+
+
+def efficient_net_b2():
+    return get_efficient_net(1.1, 1.2, 260, 0.3)
+
+
+def efficient_net_b3():
+    return get_efficient_net(1.2, 1.4, 300, 0.3)
+
+
+def efficient_net_b4():
+    return get_efficient_net(1.4, 1.8, 380, 0.4)
+
+
+def efficient_net_b5():
+    return get_efficient_net(1.6, 2.2, 456, 0.4)
+
+
+def efficient_net_b6():
+    return get_efficient_net(1.8, 2.6, 528, 0.5)
+
+
+def efficient_net_b7():
+    return get_efficient_net(2.0, 3.1, 600, 0.5)
+
