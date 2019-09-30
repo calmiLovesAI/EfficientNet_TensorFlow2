@@ -60,11 +60,11 @@ class MBConv(tf.keras.layers.Layer):
     def call(self, inputs, training=None, **kwargs):
         x = self.conv1(inputs)
         x = self.bn1(x, training=training)
-        x = tf.nn.relu6(x)
+        x = swish(x)
         x = self.dwconv(x)
         x = self.bn2(x, training=training)
         x = self.se(x)
-        x = tf.nn.relu6(x)
+        x = swish(x)
         x = self.conv2(x)
         x = self.bn3(x, training=training)
         if self.stride == 1 and self.in_channels == self.out_channels:
@@ -93,7 +93,7 @@ def build_mbconv_block(in_channels, out_channels, layers, stride, expansion_fact
 
 
 class EfficientNet(tf.keras.Model):
-    def __init__(self):
+    def __init__(self, dropout_rate):
         super(EfficientNet, self).__init__()
         self.conv1 = tf.keras.layers.Conv2D(filters=32,
                                             kernel_size=(3, 3),
@@ -121,13 +121,14 @@ class EfficientNet(tf.keras.Model):
                                             padding="same")
         self.bn2 = tf.keras.layers.BatchNormalization()
         self.pool = tf.keras.layers.GlobalAveragePooling2D()
+        self.dropout = tf.keras.layers.Dropout(rate=dropout_rate)
         self.fc = tf.keras.layers.Dense(units=NUM_CLASSES,
                                         activation=tf.keras.activations.softmax)
 
     def call(self, inputs, training=None, mask=None):
         x = self.conv1(inputs)
         x = self.bn1(x, training=training)
-        x = tf.nn.relu6(x)
+        x = swish(x)
 
         x = self.block1(x)
         x = self.block2(x)
@@ -139,8 +140,9 @@ class EfficientNet(tf.keras.Model):
 
         x = self.conv2(x)
         x = self.bn2(x, training=training)
-        x = tf.nn.relu6(x)
+        x = swish(x)
         x = self.pool(x)
+        x = self.dropout(x, training=training)
         x = self.fc(x)
 
         return x
