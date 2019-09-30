@@ -3,21 +3,32 @@ import tensorflow as tf
 NUM_CLASSES = 10
 
 
+def swish(x):
+    return x * tf.nn.sigmoid(x)
+
+
 class SEBlock(tf.keras.layers.Layer):
-    def __init__(self, input_channels, r=4):
+    def __init__(self, input_channels, ratio=0.25):
         super(SEBlock, self).__init__()
+        self.num_reduced_filters = max(1, int(input_channels * ratio))
         self.pool = tf.keras.layers.GlobalAveragePooling2D()
-        self.fc1 = tf.keras.layers.Dense(units=input_channels // r)
-        self.fc2 = tf.keras.layers.Dense(units=input_channels)
+        self.reduce_conv = tf.keras.layers.Conv2D(filters=self.num_reduced_filters,
+                                                  kernel_size=(1, 1),
+                                                  strides=1,
+                                                  padding="same")
+        self.expand_conv = tf.keras.layers.Conv2D(filters=input_channels,
+                                                  kernel_size=(1, 1),
+                                                  strides=1,
+                                                  padding="same")
 
     def call(self, inputs, **kwargs):
         branch = self.pool(inputs)
-        branch = self.fc1(branch)
-        branch = tf.nn.relu(branch)
-        branch = self.fc2(branch)
+        branch = tf.expand_dims(input=branch, axis=1)
+        branch = tf.expand_dims(input=branch, axis=1)
+        branch = self.reduce_conv(branch)
+        branch = swish(branch)
+        branch = self.expand_conv(branch)
         branch = tf.nn.sigmoid(branch)
-        branch = tf.expand_dims(input=branch, axis=1)
-        branch = tf.expand_dims(input=branch, axis=1)
         output = inputs * branch
         return output
 
