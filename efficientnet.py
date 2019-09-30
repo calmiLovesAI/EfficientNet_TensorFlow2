@@ -189,3 +189,23 @@ class EfficientNet(tf.keras.Model):
 
         return x
 
+
+def get_efficient_net(width_coefficient, depth_coefficient, resolution, dropout_rate):
+    net = EfficientNet(width_coefficient=width_coefficient,
+                       depth_coefficient=depth_coefficient,
+                       dropout_rate=dropout_rate)
+    net.build(input_shape=(None, resolution, resolution, 3))
+    net.summary()
+
+    return net
+
+
+if __name__ == '__main__':
+    b0 = get_efficient_net(1.0, 1.1, 224, 0.2)
+    b1 = get_efficient_net(1.0, 1.1, 240, 0.2)
+    b2 = get_efficient_net(1.1, 1.2, 260, 0.3)
+    b3 = get_efficient_net(1.2, 1.4, 300, 0.3)
+    b4 = get_efficient_net(1.4, 1.8, 380, 0.4)
+    b5 = get_efficient_net(1.6, 2.2, 456, 0.4)
+    b6 = get_efficient_net(1.8, 2.6, 528, 0.5)
+    b7 = get_efficient_net(2.0, 3.1, 600, 0.5)
