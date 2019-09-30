@@ -1,10 +1,28 @@
 import tensorflow as tf
+import math
 
 NUM_CLASSES = 10
 
 
 def swish(x):
     return x * tf.nn.sigmoid(x)
+
+
+def round_filters(filters, multiplier):
+    depth_divisor = 8
+    min_depth = None
+    min_depth = min_depth or depth_divisor
+    filters = filters * multiplier
+    new_filters = max(min_depth, int(filters + depth_divisor / 2) // depth_divisor * depth_divisor)
+    if new_filters < 0.9 * filters:
+        new_filters += depth_divisor
+    return int(new_filters)
+
+
+def round_repeats(repeats, multiplier):
+    if not multiplier:
+        return repeats
+    return int(math.ceil(multiplier * repeats))
 
 
 class SEBlock(tf.keras.layers.Layer):
@@ -74,7 +92,7 @@ class MBConv(tf.keras.layers.Layer):
         return x
 
 
-def build_mbconv_block(in_channels, out_channels, layers, stride, expansion_factor, k):
+def build_mbconv_block(in_channels, out_channels, layers, stride, expansion_factor, k, drop_connect_rate):
     block = tf.keras.Sequential()
     for i in range(layers):
         if i == 0:
@@ -82,40 +100,64 @@ def build_mbconv_block(in_channels, out_channels, layers, stride, expansion_fact
                              out_channels=out_channels,
                              expansion_factor=expansion_factor,
                              stride=stride,
-                             k=k))
+                             k=k,
+                             drop_connect_rate=drop_connect_rate))
         else:
             block.add(MBConv(in_channels=out_channels,
                              out_channels=out_channels,
                              expansion_factor=expansion_factor,
                              stride=1,
-                             k=k))
+                             k=k,
+                             drop_connect_rate=drop_connect_rate))
     return block
 
 
 class EfficientNet(tf.keras.Model):
-    def __init__(self, dropout_rate):
+    def __init__(self, width_coefficient, depth_coefficient, dropout_rate, drop_connect_rate=0.2):
         super(EfficientNet, self).__init__()
-        self.conv1 = tf.keras.layers.Conv2D(filters=32,
+
+        self.conv1 = tf.keras.layers.Conv2D(filters=round_filters(32, width_coefficient),
                                             kernel_size=(3, 3),
                                             strides=2,
                                             padding="same")
         self.bn1 = tf.keras.layers.BatchNormalization()
-        self.block1 = build_mbconv_block(in_channels=32, out_channels=16, layers=1, stride=1,
-                                         expansion_factor=1, k=3)
-        self.block2 = build_mbconv_block(in_channels=16, out_channels=24, layers=2, stride=2,
-                                         expansion_factor=6, k=3)
-        self.block3 = build_mbconv_block(in_channels=24, out_channels=40, layers=2, stride=2,
-                                         expansion_factor=6, k=5)
-        self.block4 = build_mbconv_block(in_channels=40, out_channels=80, layers=3, stride=2,
-                                         expansion_factor=6, k=3)
-        self.block5 = build_mbconv_block(in_channels=80, out_channels=112, layers=3, stride=1,
-                                         expansion_factor=6, k=5)
-        self.block6 = build_mbconv_block(in_channels=112, out_channels=192, layers=4, stride=2,
-                                         expansion_factor=6, k=5)
-        self.block7 = build_mbconv_block(in_channels=192, out_channels=320, layers=1, stride=1,
-                                         expansion_factor=6, k=3)
+        self.block1 = build_mbconv_block(in_channels=round_filters(32, width_coefficient),
+                                         out_channels=round_filters(16, width_coefficient),
+                                         layers=round_filters(1, depth_coefficient),
+                                         stride=1,
+                                         expansion_factor=1, k=3, drop_connect_rate=drop_connect_rate)
+        self.block2 = build_mbconv_block(in_channels=round_filters(16, width_coefficient),
+                                         out_channels=round_filters(24, width_coefficient),
+                                         layers=round_repeats(2, depth_coefficient),
+                                         stride=2,
+                                         expansion_factor=6, k=3, drop_connect_rate=drop_connect_rate)
+        self.block3 = build_mbconv_block(in_channels=round_filters(24, width_coefficient),
+                                         out_channels=round_filters(40, width_coefficient),
+                                         layers=round_repeats(2, depth_coefficient),
+                                         stride=2,
+                                         expansion_factor=6, k=5, drop_connect_rate=drop_connect_rate)
+        self.block4 = build_mbconv_block(in_channels=round_filters(40, width_coefficient),
+                                         out_channels=round_filters(80, width_coefficient),
+                                         layers=round_repeats(2, depth_coefficient),
+                                         stride=2,
+                                         expansion_factor=6, k=3, drop_connect_rate=drop_connect_rate)
+        self.block5 = build_mbconv_block(in_channels=round_filters(80, width_coefficient),
+                                         out_channels=round_filters(112, width_coefficient),
+                                         layers=round_repeats(3, depth_coefficient),
+                                         stride=1,
+                                         expansion_factor=6, k=5, drop_connect_rate=drop_connect_rate)
+        self.block6 = build_mbconv_block(in_channels=round_filters(112, width_coefficient),
+                                         out_channels=round_filters(192, width_coefficient),
+                                         layers=round_repeats(4, depth_coefficient),
+                                         stride=2,
+                                         expansion_factor=6, k=5, drop_connect_rate=drop_connect_rate)
+        self.block7 = build_mbconv_block(in_channels=round_filters(192, width_coefficient),
+                                         out_channels=round_filters(320, width_coefficient),
+                                         layers=round_repeats(1, depth_coefficient),
+                                         stride=1,
+                                         expansion_factor=6, k=3, drop_connect_rate=drop_connect_rate)
 
-        self.conv2 = tf.keras.layers.Conv2D(filters=1280,
+        self.conv2 = tf.keras.layers.Conv2D(filters=round_filters(1280, width_coefficient),
                                             kernel_size=(1, 1),
                                             strides=1,
                                             padding="same")
