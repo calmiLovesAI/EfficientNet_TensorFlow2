@@ -4,5 +4,5 @@ A tensorflow2 implementation of EfficientNet.
 See https://github.com/calmisential/Basic_CNNs_TensorFlow2 for training details.
 
 ## References:
-1. The original paper: [EffcientNet: Rethinking Model Scaling for Convolutional Neural Networks](https://arxiv.org/abs/1905.11946)
+1. The original paper: [EfficientNet: Rethinking Model Scaling for Convolutional Neural Networks](https://arxiv.org/abs/1905.11946)
 2. The official code: https://github.com/tensorflow/tpu/tree/master/models/official/efficientnet
